@@ -30,7 +30,7 @@ int main(int argc, char *argv[]){
   string str, s;
 
   //Calculation being done
-  printf("Calculating sum of products of two integer vectors of length %d initalized to 0..%d using %d Cores.\n",N,N-1,CORES);
+  printf("Calculating \n");
   printf("........\n");
   
   ifstream file("/home/parallella/Downloads/paral/dataset.txt");
@@ -69,13 +69,6 @@ int main(int argc, char *argv[]){
   e_get_platform_info(&platform);
   e_open(&dev, 0, 0, platform.rows, platform.cols); //open all cores
 
-/*
-  //Initialize a/b input vectors on host side
-  for (i=0; i<N; i++){
-    a[i] = i;
-    b[i] = i;
-  }
-*/
   e_load_group("e_task.elf", &dev, 0, 0, platform.rows, platform.cols, E_FALSE);
 
   //1. Copy data (N/CORE points) from host to Epiphany local memory
@@ -83,7 +76,6 @@ int main(int argc, char *argv[]){
   for (i=0; i<platform.rows; i++){
     for (j=0; j<platform.cols;j++){
       e_write(&dev, i, j, 0x2000, &dif[(i*platform.cols+j)*sections], sections*sizeof(int));
-      //e_write(&dev, i, j, 0x4000, &b[(i*platform.cols+j)*sections], sections*sizeof(unsigned));
       e_write(&dev, i, j, 0x7000, &clr, sizeof(clr));
     }
   }
@@ -112,7 +104,7 @@ int main(int argc, char *argv[]){
       }
   }
 
-  //Calculates final sum-of-product using Epiphany results as inputs
+  //Print results
   sop=0;
   for (i=0; i<30; i++){
       printf("a %d \n", resar[i]);
@@ -125,8 +117,6 @@ int main(int argc, char *argv[]){
       }
   }
 
-  //Print out result
-  printf("Sum of Product Is %u!\n",sop);
   //Close down Epiphany device
   //Close down Epiphany device
   e_close(&dev);
