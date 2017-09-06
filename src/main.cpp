@@ -68,14 +68,13 @@ int main(int argc, char *argv[]){
   e_get_platform_info(&platform);
   e_open(&dev, 0, 0, platform.rows, platform.cols); //open first workgroup for huff
 
-
-  e_load_group("e_huf_task.elf", &dev, 0, 0, 2, 4, E_FALSE);
-
-
-  e_load_group("e_task.elf", &dev, 2, 0, 2, 4, E_FALSE);
+  e_load_group("e_fft_task.elf", &dev, 0, 0, 4, 4, E_FALSE);
 
 
-/*
+  //e_load_group("e_huf_task.elf", &dev, 2, 0, 2, 4, E_FALSE);
+
+
+
   //1. Copy data (N/CORE points) from host to Epiphany local memory
   //2. Clear the "done" flag for every core
   for (i=0; i<platform.rows; i++){
@@ -84,7 +83,7 @@ int main(int argc, char *argv[]){
       e_write(&dev, i, j, 0x7000, &clr, sizeof(clr));
     }
   }
-*/
+
 
   // start cores
   e_start_group(&dev);
@@ -103,11 +102,11 @@ int main(int argc, char *argv[]){
     }
   }
 
-/*
+
   //Copy all Epiphany results to host memory space
   for (i=0; i<platform.rows; i++){
       for (j=0; j<platform.cols;j++){
-        e_read(&dev, i, j, 0x4000, &resar[(i*platform.cols+j)*sections], sections*sizeof(complex<double>));
+        e_read(&dev, i, j, 0x6000, &resar[(i*platform.cols+j)*sections], sections*sizeof(complex<double>));
       }
   }
 
@@ -115,7 +114,7 @@ int main(int argc, char *argv[]){
   sop=0;
   for (i=0; i<NUM_OF_DIFS; i++){
       cout << resar[i] << endl;
-  }*/
+  }
 
 /*
   for (i=0; i<platform.rows; i++){
@@ -125,7 +124,7 @@ int main(int argc, char *argv[]){
       }
   }
 */
-/*
+
   for (i=0; i<platform.rows; i++){
       for (j=0; j<platform.cols;j++){
         e_read(&dev, i, j, 0x4000, &corenum[(i*platform.cols+j)], sizeof(unsigned));
@@ -133,7 +132,7 @@ int main(int argc, char *argv[]){
   }
   for(i=0 ; i<CORES ; i++){
 	cout << "core id: " << corenum[i] << endl;
-  }*/
+  }
   //Close down Epiphany device
   //Close down Epiphany device
   e_close(&dev);

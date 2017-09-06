@@ -30,10 +30,10 @@ esac
 ${CROSS_PREFIX}g++ src/main.cpp -o bin/main.elf ${EINCS} ${ELIBS} -le-hal -le-loader -lpthread
 
 # Build DEVICE side program
-e-g++ -O3  -T ${ELDF} src/e_task.cpp -o bin/e_task.elf -le-lib -lm -ffast-math -fno-exceptions -fno-rtti -fno-threadsafe-statics -fno-default-inline
+e-g++ -O3  -T ${ELDF} src/e_fft_task.cpp -o bin/e_fft_task.elf -le-lib -lm -ffast-math -fno-exceptions -fno-rtti -fno-threadsafe-statics -fno-default-inline
 
 # Convert ebinary to SREC file
-e-objcopy --srec-forceS3 --output-target srec bin/e_task.elf bin/e_task.srec
+e-objcopy --srec-forceS3 --output-target srec bin/e_fft_task.elf bin/e_fft_task.srec
 
 # Build DEVICE2 side program
 e-g++ -O3  -T ${ELDF} src/e_huf_task.cpp -o bin/e_huf_task.elf -le-lib -lm -ffast-math -fno-exceptions -fno-rtti -fno-threadsafe-statics -fno-default-inline

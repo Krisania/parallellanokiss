@@ -85,9 +85,9 @@ int main(void)
   b    = (unsigned *) 0x4000;//Address of matrix
   c    = (int *) 0x6000;//size of Result
   d    = (unsigned *) 0x7000;//Done flag
-  bafter = (complex<double> *) 0x4000;
+  bafter = (complex<double> *) 0x6000;
 
-/*
+
  complex<double> vec[MAX];
  for (int ccounter =0 ; ccounter < NUM_OF_DIFS/CORES ; ccounter++){
 	vec[ccounter] = b[ccounter];
@@ -95,9 +95,9 @@ int main(void)
  FFT(vec, NUM_OF_DIFS/CORES, 1);
   for (int ccounter =0 ; ccounter < NUM_OF_DIFS/CORES ; ccounter++){
 	bafter[ccounter] = vec[ccounter];
- }*/
+ }
 
-//  (*(b)) = e_get_coreid();
+  (*(b)) = e_get_coreid();
 
   //Raising "done" flag
   (*(d)) = 0x00000001;
