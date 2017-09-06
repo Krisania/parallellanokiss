@@ -1,3 +1,4 @@
-#define N 64
 #define CORES 16
-#define NUM_OF_DIFS 160
+#define NUM_OF_DIFS 128
+#define MAX 200
+#define M_PI 3.1415926535897932384

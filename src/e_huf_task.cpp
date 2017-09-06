@@ -5,7 +5,6 @@
 
 using namespace std;
 
-
 int log2(int N)    /*function to calculate the log2(.) of int numbers*/
 {
   int k = N, i = 0;
@@ -72,8 +71,6 @@ void FFT(complex<double>* f, int N, double d)
     f[i] *= d; //multiplying by step
 }
 
-
-
 int main(void)
 {
   int *a, *c;
@@ -87,15 +84,6 @@ int main(void)
   d    = (unsigned *) 0x7000;//Done flag
   bafter = (complex<double> *) 0x4000;
 
-/*
- complex<double> vec[MAX];
- for (int ccounter =0 ; ccounter < NUM_OF_DIFS/CORES ; ccounter++){
-	vec[ccounter] = b[ccounter];
- }
- FFT(vec, NUM_OF_DIFS/CORES, 1);
-  for (int ccounter =0 ; ccounter < NUM_OF_DIFS/CORES ; ccounter++){
-	bafter[ccounter] = vec[ccounter];
- }*/
 
 //  (*(b)) = e_get_coreid();
 

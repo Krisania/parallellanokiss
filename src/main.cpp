@@ -3,15 +3,10 @@
 #include <e-hal.h>
 #include <iostream>
 #include <fstream>
-#include "kiss_fft.h"
 #include "common.h"
-#include <vector>
-#include <queue>
-#include <map>
-#include <algorithm>
 #include <string>
-#include <cassert>
 #include <e-loader.h>
+#include <complex>
 
 using namespace std;
 
@@ -19,14 +14,14 @@ int main(int argc, char *argv[]){
   e_platform_t platform;
   e_epiphany_t dev;
 
-  int a[N], b[N], c[CORES];
-  int done[CORES],all_done;
+  int done[CORES], all_done;
   size_t rescor[CORES];
   int sop;
-  int i,j, mi=0, mj=0, dif[NUM_OF_DIFS], resar[NUM_OF_DIFS];
+  int i,j, mi=0, mj=0, dif[NUM_OF_DIFS];
+  complex<double> resar[MAX];
   float prev_float, cur_float;
   int sections = NUM_OF_DIFS/CORES; //assumes N is evenly divisible by CORES
-  unsigned clr = 0;
+  unsigned clr = 0, corenum[CORES];
   string str, s;
 
   //Calculation being done
@@ -34,6 +29,10 @@ int main(int argc, char *argv[]){
   printf("........\n");
   
   ifstream file("/home/parallella/Downloads/paral/dataset.txt");
+
+  for(i=0 ; i<CORES ; i++){
+  	corenum[i] = 0;
+  }
 
   //Compute differences
   while (getline(file, str)){
@@ -62,23 +61,30 @@ int main(int argc, char *argv[]){
 	mi++;		
   }
 
-  
   //Initalize Epiphany device
+
   e_init(NULL);
   e_reset_system();                                      //reset Epiphany
   e_get_platform_info(&platform);
-  e_open(&dev, 0, 0, platform.rows, platform.cols); //open all cores
+  e_open(&dev, 0, 0, platform.rows, platform.cols); //open first workgroup for huff
 
-  e_load_group("e_task.elf", &dev, 0, 0, platform.rows, platform.cols, E_FALSE);
 
+  e_load_group("e_huf_task.elf", &dev, 0, 0, 2, 4, E_FALSE);
+
+
+  e_load_group("e_task.elf", &dev, 2, 0, 2, 4, E_FALSE);
+
+
+/*
   //1. Copy data (N/CORE points) from host to Epiphany local memory
   //2. Clear the "done" flag for every core
   for (i=0; i<platform.rows; i++){
     for (j=0; j<platform.cols;j++){
-      e_write(&dev, i, j, 0x2000, &dif[(i*platform.cols+j)*sections], sections*sizeof(int));
+      e_write(&dev, i, j, 0x4000, &dif[(i*platform.cols+j)*sections], sections*sizeof(int));
       e_write(&dev, i, j, 0x7000, &clr, sizeof(clr));
     }
   }
+*/
 
   // start cores
   e_start_group(&dev);
@@ -89,7 +95,7 @@ int main(int argc, char *argv[]){
     for (i=0; i<platform.rows; i++){
       for (j=0; j<platform.cols;j++){
         e_read(&dev, i, j, 0x7000, &done[i*platform.cols+j], sizeof(unsigned));
-        all_done+=done[i*platform.cols+j];
+	all_done+=done[i*platform.cols+j];
       }
     }
     if(all_done==CORES){
@@ -97,26 +103,37 @@ int main(int argc, char *argv[]){
     }
   }
 
+/*
   //Copy all Epiphany results to host memory space
   for (i=0; i<platform.rows; i++){
       for (j=0; j<platform.cols;j++){
-        e_read(&dev, i, j, 0x2000, &resar[(i*platform.cols+j)*sections], sections*sizeof(int));
+        e_read(&dev, i, j, 0x4000, &resar[(i*platform.cols+j)*sections], sections*sizeof(complex<double>));
       }
   }
 
   //Print results
   sop=0;
-  for (i=0; i<30; i++){
-      printf("a %d \n", resar[i]);
-  }
-  
+  for (i=0; i<NUM_OF_DIFS; i++){
+      cout << resar[i] << endl;
+  }*/
+
+/*
   for (i=0; i<platform.rows; i++){
       for (j=0; j<platform.cols;j++){
         e_read(&dev, i, j, 0x6000, &rescor[i*platform.cols+j], sizeof(size_t));
 	printf("size is: %u \n", rescor[i*platform.cols+j]);
       }
   }
-
+*/
+/*
+  for (i=0; i<platform.rows; i++){
+      for (j=0; j<platform.cols;j++){
+        e_read(&dev, i, j, 0x4000, &corenum[(i*platform.cols+j)], sizeof(unsigned));
+      }
+  }
+  for(i=0 ; i<CORES ; i++){
+	cout << "core id: " << corenum[i] << endl;
+  }*/
   //Close down Epiphany device
   //Close down Epiphany device
   e_close(&dev);
