@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stddef.h>
 #include <e-hal.h>
 #include <iostream>
 #include <fstream>
@@ -8,20 +9,24 @@
 #include <e-loader.h>
 #include <complex>
 
+#define _BufOffset (0x01000000)
+
 using namespace std;
+
+Mailbox mbox;
 
 int main(int argc, char *argv[]){
   e_platform_t platform;
   e_epiphany_t dev;
+  e_mem_t emem;
 
   int done[CORES], all_done;
-  size_t rescor[CORES];
   int sop;
   int i,j, mi=0, mj=0, dif[NUM_OF_DIFS];
-  complex<double> resar[MAX];
   float prev_float, cur_float;
   int sections = NUM_OF_DIFS/CORES; //assumes N is evenly divisible by CORES
-  unsigned clr = 0, corenum[CORES];
+  unsigned corenum[CORES];
+  unsigned int addr;
   string str, s;
 
   //Calculation being done
@@ -35,6 +40,7 @@ int main(int argc, char *argv[]){
   }
 
   //Compute differences
+
   while (getline(file, str)){
 	if(!(mi%2)){
 		prev_float = strtof(str.c_str(), 0);
@@ -61,11 +67,19 @@ int main(int argc, char *argv[]){
 	mi++;		
   }
 
+
   //Initalize Epiphany device
 
   e_init(NULL);
   e_reset_system();                                      //reset Epiphany
   e_get_platform_info(&platform);
+
+  //Initialize mailbox
+
+  e_alloc(&emem, _BufOffset, sizeof(Mailbox));
+
+
+
   e_open(&dev, 0, 0, platform.rows, platform.cols); //open first workgroup for huff
 
   e_load_group("e_fft_task.elf", &dev, 0, 0, 4, 4, E_FALSE);
@@ -75,56 +89,58 @@ int main(int argc, char *argv[]){
 
 
 
-  //1. Copy data (N/CORE points) from host to Epiphany local memory
-  //2. Clear the "done" flag for every core
-  for (i=0; i<platform.rows; i++){
-    for (j=0; j<platform.cols;j++){
-      e_write(&dev, i, j, 0x4000, &dif[(i*platform.cols+j)*sections], sections*sizeof(int));
-      e_write(&dev, i, j, 0x7000, &clr, sizeof(clr));
-    }
+  // Input in shared dram
+
+  for(i=0; i< CORES; i++){
+	for(j=0; j<NUM_OF_DIFS; j++){
+		mbox.inputnum[j] = dif[j];
+		mbox.result[j] = 0;		
+	}
+	mbox.flag[i] = 0;
   }
+  addr = offsetof(Mailbox, flag);
+  e_write(&emem, 0, 0, addr, mbox.flag, sizeof(mbox.flag));
+
+  addr = offsetof(Mailbox, inputnum);
+  e_write(&emem, 0, 0, addr, mbox.inputnum, sizeof(mbox.inputnum));
+
+  addr = offsetof(Mailbox, result);
+  e_write(&emem, 0, 0, addr, mbox.result, sizeof(mbox.result));
+
+
 
 
   // start cores
   e_start_group(&dev);
 
+
   //Check if all cores are done
-  while(1){
-    all_done=0;
-    for (i=0; i<platform.rows; i++){
-      for (j=0; j<platform.cols;j++){
-        e_read(&dev, i, j, 0x7000, &done[i*platform.cols+j], sizeof(unsigned));
-	all_done+=done[i*platform.cols+j];
-      }
-    }
-    if(all_done==CORES){
-      break;
-    }
+  all_done=0;
+  addr = offsetof(Mailbox, flag);
+  while(all_done != CORES){
+	all_done = 0;
+	e_read(&emem, 0, 0, addr, mbox.flag, sizeof(mbox.flag));
+	for(i=0 ; i<CORES ; i++){
+		all_done += mbox.flag[i];
+	}
   }
 
 
-  //Copy all Epiphany results to host memory space
-  for (i=0; i<platform.rows; i++){
-      for (j=0; j<platform.cols;j++){
-        e_read(&dev, i, j, 0x6000, &resar[(i*platform.cols+j)*sections], sections*sizeof(complex<double>));
-      }
+
+
+ //Copy all Epiphany results to host memory space
+  addr = offsetof(Mailbox, result);
+  e_read(&emem, 0, 0, addr, mbox.result, sizeof(mbox.result));
+
+
+ //Print result
+  for(i=0 ; i<NUM_OF_DIFS ; i++){
+	cout << "Res: " << mbox.result[i] << endl;
   }
 
-  //Print results
-  sop=0;
-  for (i=0; i<NUM_OF_DIFS; i++){
-      cout << resar[i] << endl;
-  }
 
 /*
-  for (i=0; i<platform.rows; i++){
-      for (j=0; j<platform.cols;j++){
-        e_read(&dev, i, j, 0x6000, &rescor[i*platform.cols+j], sizeof(size_t));
-	printf("size is: %u \n", rescor[i*platform.cols+j]);
-      }
-  }
-*/
-
+  // Print core number (old impl)
   for (i=0; i<platform.rows; i++){
       for (j=0; j<platform.cols;j++){
         e_read(&dev, i, j, 0x4000, &corenum[(i*platform.cols+j)], sizeof(unsigned));
@@ -132,10 +148,12 @@ int main(int argc, char *argv[]){
   }
   for(i=0 ; i<CORES ; i++){
 	cout << "core id: " << corenum[i] << endl;
-  }
+  }*/
+
   //Close down Epiphany device
   //Close down Epiphany device
   e_close(&dev);
+  e_free(&emem);
   e_finalize();
 
   if(sop!=0){

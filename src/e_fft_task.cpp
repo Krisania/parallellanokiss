@@ -72,35 +72,33 @@ void FFT(complex<double>* f, int N, double d)
     f[i] *= d; //multiplying by step
 }
 
-
+Mailbox mbox SECTION("shared_dram");
 
 int main(void)
 {
-  int *a, *c;
-  unsigned *d, *b;
   int i;
-  complex<double> *bafter;
+  unsigned int coreid, row, col, corenum;
 
-  a    = (int *) 0x2000;//unused 
-  b    = (unsigned *) 0x4000;//Address of matrix
-  c    = (int *) 0x6000;//size of Result
-  d    = (unsigned *) 0x7000;//Done flag
-  bafter = (complex<double> *) 0x6000;
+
+  coreid = e_get_coreid();
+  e_coords_from_coreid(coreid, &row, &col);
+  corenum = row * e_group_config.group_cols + col;
 
 
  complex<double> vec[MAX];
  for (int ccounter =0 ; ccounter < NUM_OF_DIFS/CORES ; ccounter++){
-	vec[ccounter] = b[ccounter];
+	vec[ccounter] = mbox.inputnum[corenum*(NUM_OF_DIFS/CORES)+ccounter];
  }
  FFT(vec, NUM_OF_DIFS/CORES, 1);
   for (int ccounter =0 ; ccounter < NUM_OF_DIFS/CORES ; ccounter++){
-	bafter[ccounter] = vec[ccounter];
+	mbox.result[corenum*(NUM_OF_DIFS/CORES)+ccounter] = vec[ccounter];
  }
 
-  (*(b)) = e_get_coreid();
 
-  //Raising "done" flag
-  (*(d)) = 0x00000001;
+  mbox.flag[corenum] = 1;
+
+
+
 
   //Put core in idle state
   __asm__ __volatile__("idle");
