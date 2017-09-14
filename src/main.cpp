@@ -80,11 +80,11 @@ int main(int argc, char *argv[]){
 
 
 
-  e_open(&dev, 0, 0, platform.rows, platform.cols); //open first workgroup for huff
+  e_open(&dev, 0, 0, platform.rows, platform.cols); //open workgroup
 
   e_load_group("e_fft_task.elf", &dev, 0, 0, 4, 4, E_FALSE);
 
-
+  //e_load_group("e_fft_task.elf", &dev, 0, 0, 2, 4, E_FALSE);
   //e_load_group("e_huf_task.elf", &dev, 2, 0, 2, 4, E_FALSE);
 
 
