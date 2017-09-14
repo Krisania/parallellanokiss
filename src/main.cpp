@@ -92,11 +92,11 @@ int main(int argc, char *argv[]){
   // Input in shared dram
 
   for(i=0; i< CORES; i++){
-	for(j=0; j<NUM_OF_DIFS; j++){
+	mbox.flag[i] = 0;
+  }
+  for(j=0; j<NUM_OF_DIFS; j++){
 		mbox.inputnum[j] = dif[j];
 		mbox.result[j] = 0;		
-	}
-	mbox.flag[i] = 0;
   }
   addr = offsetof(Mailbox, flag);
   e_write(&emem, 0, 0, addr, mbox.flag, sizeof(mbox.flag));
