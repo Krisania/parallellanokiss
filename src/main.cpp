@@ -84,8 +84,8 @@ int main(int argc, char *argv[]){
 
   e_load_group("e_fft_task.elf", &dev, 0, 0, 4, 4, E_FALSE);
 
-  //e_load_group("e_fft_task.elf", &dev, 0, 0, 2, 4, E_FALSE);
-  //e_load_group("e_huf_task.elf", &dev, 2, 0, 2, 4, E_FALSE);
+  //e_load_group("e_huf_task.elf", &dev, 0, 0, 2, 4, E_FALSE);
+  //e_load_group("e_fft_task.elf", &dev, 2, 0, 2, 4, E_FALSE);
 
 
 
@@ -96,7 +96,8 @@ int main(int argc, char *argv[]){
   }
   for(j=0; j<NUM_OF_DIFS; j++){
 		mbox.inputnum[j] = dif[j];
-		mbox.result[j] = 0;		
+		mbox.result_r[j] = 0;
+		mbox.result_im[j] = 0;		
   }
   addr = offsetof(Mailbox, flag);
   e_write(&emem, 0, 0, addr, mbox.flag, sizeof(mbox.flag));
@@ -104,10 +105,11 @@ int main(int argc, char *argv[]){
   addr = offsetof(Mailbox, inputnum);
   e_write(&emem, 0, 0, addr, mbox.inputnum, sizeof(mbox.inputnum));
 
-  addr = offsetof(Mailbox, result);
-  e_write(&emem, 0, 0, addr, mbox.result, sizeof(mbox.result));
+  addr = offsetof(Mailbox, result_r);
+  e_write(&emem, 0, 0, addr, mbox.result_r, sizeof(mbox.result_r));
 
-
+  addr = offsetof(Mailbox, result_im);
+  e_write(&emem, 0, 0, addr, mbox.result_im, sizeof(mbox.result_im));
 
 
   // start cores
@@ -115,13 +117,18 @@ int main(int argc, char *argv[]){
 
 
   //Check if all cores are done
+  j=0;
   all_done=0;
   addr = offsetof(Mailbox, flag);
   while(all_done != CORES){
 	all_done = 0;
+	j++;
 	e_read(&emem, 0, 0, addr, mbox.flag, sizeof(mbox.flag));
 	for(i=0 ; i<CORES ; i++){
 		all_done += mbox.flag[i];
+		if(j>20000 && j<20003){
+			//cout << "Core " << i << " flag: " << mbox.flag[i] << endl;
+		}
 	}
   }
 
@@ -129,26 +136,28 @@ int main(int argc, char *argv[]){
 
 
  //Copy all Epiphany results to host memory space
-  addr = offsetof(Mailbox, result);
-  e_read(&emem, 0, 0, addr, mbox.result, sizeof(mbox.result));
+  addr = offsetof(Mailbox, result_r);
+  e_read(&emem, 0, 0, addr, mbox.result_r, sizeof(mbox.result_r));
 
+  addr = offsetof(Mailbox, result_im);
+  e_read(&emem, 0, 0, addr, mbox.result_im, sizeof(mbox.result_im));
 
  //Print result
   for(i=0 ; i<NUM_OF_DIFS ; i++){
-	cout << "Res: " << mbox.result[i] << endl;
+	cout << "Res: Real: " << mbox.result_r[i] << " im: " << mbox.result_im[i] << endl;
   }
 
 
-/*
+
   // Print core number (old impl)
   for (i=0; i<platform.rows; i++){
       for (j=0; j<platform.cols;j++){
-        e_read(&dev, i, j, 0x4000, &corenum[(i*platform.cols+j)], sizeof(unsigned));
+        e_read(&dev, i, j, 0x7000, &corenum[(i*platform.cols+j)], sizeof(int));
       }
   }
   for(i=0 ; i<CORES ; i++){
 	cout << "core id: " << corenum[i] << endl;
-  }*/
+  }
 
   //Close down Epiphany device
   //Close down Epiphany device

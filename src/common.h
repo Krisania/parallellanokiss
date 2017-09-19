@@ -1,4 +1,4 @@
-#include <complex>
+#include <cstdint>
 
 #define CORES 16
 #define NUM_OF_DIFS 128
@@ -7,7 +7,8 @@
 
 typedef struct
 {
-    int inputnum[NUM_OF_DIFS];
-    std::complex<double> result[NUM_OF_DIFS];
-    int flag[CORES];
+    int32_t inputnum[NUM_OF_DIFS];
+    double result_r[NUM_OF_DIFS];
+    double result_im[NUM_OF_DIFS];
+    int32_t flag[CORES];
 } Mailbox;

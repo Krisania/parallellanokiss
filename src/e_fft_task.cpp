@@ -72,10 +72,11 @@ void FFT(complex<double>* f, int N, double d)
     f[i] *= d; //multiplying by step
 }
 
-Mailbox mbox SECTION("shared_dram");
+volatile Mailbox mbox SECTION("shared_dram");
 
 int main(void)
 {
+  int *a;
   int i;
   unsigned int coreid, row, col, corenum;
 
@@ -91,8 +92,12 @@ int main(void)
  }
  FFT(vec, NUM_OF_DIFS/CORES, 1);
   for (int ccounter =0 ; ccounter < NUM_OF_DIFS/CORES ; ccounter++){
-	mbox.result[corenum*(NUM_OF_DIFS/CORES)+ccounter] = vec[ccounter];
+	mbox.result_r[corenum*(NUM_OF_DIFS/CORES)+ccounter] = vec[ccounter].real();
+	mbox.result_im[corenum*(NUM_OF_DIFS/CORES)+ccounter] = vec[ccounter].imag();
  }
+
+  a = (int *) 0x7000;
+  (*(a)) = corenum;
 
 
   mbox.flag[corenum] = 1;
